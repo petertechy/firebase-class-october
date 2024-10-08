@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div class="mx-auto col-7 rounded shadow p-3 my-3">
+      <h1 class="text-center text-success display-3 mb-3 fw-bold">
+        Register Here
+      </h1>
+      <input id="firstName" class="mb-3 form-control" type="text" placeholder="first name" />
+      <input id="lastName" class="mb-3 form-control" type="text" placeholder="last name" />
+      <input id="dob" class="mb-3 form-control" type="date" />
+      <input id="email" class="mb-3 form-control" type="email" placeholder="email" />
+      <input id="password" class="mb-3 form-control" type="password" placeholder="password" />
+
+      <button id="btn" class="btn btn-success form-control">Submit</button>
+    </div>
+
+    <hr>
+
+
+    <div class="mx-auto col-7 rounded shadow p-3 my-3">
+      <h1 class="text-center text-primary display-3 mb-3 fw-bold">
+        Login Here
+      </h1>
+      <input id="loginEmail" class="mb-3 form-control" type="email" placeholder="email" />
+      <input id="loginPassword" class="mb-3 form-control" type="password" placeholder="password" />
+
+      <button id="loginBtn" class="btn btn-primary form-control">Login</button>
+    </div>
+
+
+
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-app.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,   } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-auth.js";
+      import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
+      // TODO: Add SDKs for Firebase products that you want to use
+      // https://firebase.google.com/docs/web/setup#available-libraries
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDELm-d2iKJjmzRggFZu6PaW4DXsHBF-Jc",
+        authDomain: "fir-class-october.firebaseapp.com",
+        projectId: "fir-class-october",
+        storageBucket: "fir-class-october.appspot.com",
+        messagingSenderId: "306254583126",
+        appId: "1:306254583126:web:e9568bfd487c5c60beb2f7",
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const database = getDatabase();
+      document.getElementById("btn").addEventListener("click", () => {
+       let firstName = document.getElementById("firstName").value;
+       let lastName = document.getElementById("lastName").value;
+       let dateOfBirth = document.getElementById("dob").value;
+       let email = document.getElementById("email").value;
+       let password = document.getElementById("password").value;
+       let date = new Date();
+
+       let userObj = {
+        firstName,
+        lastName,
+        dateOfBirth,
+        time: date.toLocaleTimeString(),
+
+       }
+
+       let userId = 0;
+       createUserWithEmailAndPassword(auth, email, password)
+  .then((userCredential) => {
+    // Signed up 
+    const user = userCredential.user;
+    console.log(user)
+
+    const dbRef = ref(database, `users/${userId}`)
+    set(dbRef, userObj);
+    userId++
+    // ...
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    const errorMessage = error.message;
+    // ..
+
+    console.log(error)
+    console.log(errorCode)
+    console.log(errorMessage)
+  });
+
+      //  console.log(userObj)
+      });
+
+
+      document.getElementById("loginBtn").addEventListener('click', ()=>{
+        let loginEmail = document.getElementById("loginEmail").value;
+        let loginPassword = document.getElementById("loginPassword").value;
+
+
+
+        signInWithEmailAndPassword(auth, loginEmail, loginPassword)
+  .then((userCredential) => {
+    // Signed in 
+    const user = userCredential.user;
+    console.log("Sign In successful")
+    console.log(user)
+
+    location.href = './dashboard.html'
+    // ...
+  })
+  .catch((error) => {
+    const errorCode = error.code;
+    const errorMessage = error.message;
+
+    console.log(error)
+    console.log(errorMessage)
+  });
+      })
+
+
+
+
+    </script>
+  </body>
+</html>
