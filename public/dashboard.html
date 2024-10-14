@@ -11,7 +11,7 @@
       crossorigin="anonymous"
     />
   </head>
-  <body>
+  <body class="py-4">
     <h1 class="text-center text-success my-3">Dashboard</h1>
     <button id="signOut" class="btn btn-danger my-3">Sign Out</button>
 
@@ -20,6 +20,18 @@
       class="col-7 my-4 shadow p-4 mx-auto text-center text-success"
     >
       <!-- User information will be displayed here -->
+    </div>
+    <div class="p-3 my-3 row shadow col-7 mx-auto">
+      <div class="col-8">
+        <input id="userInput" type="text" class="form-control" placeholder="Type your message" />
+      </div>
+      <div class="col-4">
+        <button id="sendMessage" class="btn btn-success">Send</button>
+      </div>
+    </div>
+
+    <div id="messageDisplay" class="col-7 my-5 shadow p-4 mx-auto text-center text-success">
+      <!-- Messages will be displayed here -->
     </div>
 
     <script type="module">
@@ -33,7 +45,8 @@
       import {
         getDatabase,
         ref,
-        onValue,
+        push, // For sending messages
+        onValue, // For retrieving messages
       } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-database.js";
 
       // Firebase configuration
@@ -53,10 +66,13 @@
 
       // Get the display element by ID
       const display = document.getElementById("display");
+      const messageDisplay = document.getElementById("messageDisplay");
+      let uid = null;
 
+      // Listen for auth state changes
       onAuthStateChanged(auth, (user) => {
         if (user) {
-          const uid = user.uid;
+          uid = user.uid;
 
           console.log(uid);
           console.log(user.email);
@@ -70,11 +86,36 @@
 
               // Display the user's information
               display.innerHTML = `
-          <h1>Name: ${data.firstName} ${data.lastName}</h1>
-          <p>Email: ${user.email}</p>
-          <p>Date of Birth: ${data.dateOfBirth}</p>
-          <p>Joined: ${data.time}</p>
-        `;
+                <h1>Name: ${data.firstName} ${data.lastName}</h1>
+                <p>Email: ${user.email}</p>
+                <p>Date of Birth: ${data.dateOfBirth}</p>
+                <p>Joined: ${data.time}</p>
+                <img src="${data.profilePicURL}" alt="Profile Picture" class="img-fluid rounded-circle" style="max-width: 150px; max-height: 150px;" />
+              `;
+
+              // Fetch and display all messages from the "groupMessages" node
+              const messagesRef = ref(database, `groupMessages`);
+              onValue(messagesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                  const messages = snapshot.val();
+                  messageDisplay.innerHTML = ""; // Clear the display
+
+                  for (const key in messages) {
+                    const messageData = messages[key];
+
+                    // Append each message with the sender's info, profile picture, and time
+                    messageDisplay.innerHTML += `
+                      <div class="message shadow p-3 mb-4 rounded">
+                        <img src="${messageData.profilePicURL}" alt="Profile Picture" class="img-fluid rounded-circle me-3" style="max-width: 50px; max-height: 50px;" />
+                        <strong>${messageData.firstName} ${messageData.lastName}</strong> <small class="text-muted">(${messageData.messageTime})</small>
+                        <p>${messageData.message}</p>
+                      </div>
+                    `;
+                  }
+                } else {
+                  messageDisplay.innerHTML = "<h2>No messages sent yet.</h2>";
+                }
+              });
             } else {
               console.log("No data available for this user.");
               display.innerHTML = `<h1>No User Data Found</h1>`;
@@ -86,16 +127,52 @@
         }
       });
 
+      // Sign out button
       document.getElementById("signOut").addEventListener("click", () => {
         signOut(auth)
           .then(() => {
             // Sign-out successful.
-            console.log("Sign out successful")
-            location.href = "/"
+            console.log("Sign out successful");
+            location.href = "/";
           })
           .catch((error) => {
-            console.log("Not working")
+            console.log("Sign out failed:", error);
           });
+      });
+
+      // Send message function
+      document.getElementById("sendMessage").addEventListener("click", () => {
+        let message = document.getElementById("userInput").value;
+        let messageTime = new Date();
+
+        if (uid) { // Ensure the user is signed in
+          const userRef = ref(database, `users/${uid}`);
+          onValue(userRef, (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.val();
+
+              let messageSent = {
+                firstName: data.firstName,
+                lastName: data.lastName,
+                profilePicURL: data.profilePicURL,
+                message,
+                messageTime: messageTime.toLocaleTimeString(),
+              };
+
+              const messagesRef = ref(database, `groupMessages`); // Store all messages in "groupMessages"
+              push(messagesRef, messageSent) // Push the message to generate a unique key
+                .then(() => {
+                  console.log("Message sent successfully");
+                  document.getElementById("userInput").value = ""; // Clear the input after sending
+                })
+                .catch((error) => {
+                  console.log("Message sending failed:", error);
+                });
+            }
+          });
+        } else {
+          console.log("User is not signed in");
+        }
       });
     </script>
   </body>
